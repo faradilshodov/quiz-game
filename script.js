@@ -191,10 +191,47 @@ async function saveHighScore() {
             body: JSON.stringify({ highScores }),
         });
     } catch (error) {
-        console.error('Error saving high score:', error);
-        
+        console.error('Error saving high score:', error);   
     }
+
+    displayHighScores(newScore);
 }
+
+// Display high scores
+function displayHighScores(newScore) {
+    highScoresList.innerText = '';
+    highScores.forEach((score) => {
+        const row = document.createElement('tr');
+
+        const nameCell = document.createElement('td');
+        nameCell.innerText = score.name;
+
+        const scoreCell = document.createElement('td');
+        scoreCell.innerText = score.score;
+
+        const dateCell = document.createElement('td');
+        dateCell.innerText = score.date;
+
+        row.appendChild(nameCell);
+        row.appendChild(scoreCell);
+        row.appendChild(dateCell);
+
+        // Highlight new score if it's top 10
+        if (score.name === newScore.name && score.score === newScore.score && score.date === newScore.date) {
+            row.classList.add('highlight');
+        }
+
+        highScoresList.appendChild(row);
+    });
+
+    loader.style.display = 'none';
+    highScoreContainer.style.display = 'flex';
+}
+
+// Reload page to start quiz over
+playAgainBtn.addEventListener('click', () => {
+    window.location.reload();
+})
 
 // On Startup
 fetchQuestions();
