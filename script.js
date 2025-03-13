@@ -17,6 +17,7 @@ let questions = [];
 let totalScore = 0;
 let timerInterval;
 let startTime;
+let highScores = [];
 const totalTime = 10000;
 
 // Fetch questions
@@ -34,6 +35,11 @@ async function fetchQuestions() {
 
 // Load each question to UI
 function loadQuestion() {
+    if (currentQuestion >= questions.length) {
+        endGame();
+        return;
+    }
+
     const question = questions[currentQuestion];
     questionText.innerText = decodeHTML(question.question);
     questionNumber.innerText = `Question ${currentQuestion + 1}`;
@@ -112,16 +118,7 @@ function updateTimerDisplay(timeLeft) {
 function checkAnswer(selectedAnswer, correctAnswer) {
     clearInterval(timerInterval);
     disableChoices();
-
-    const choices = document.querySelectorAll('.choice');
-    choices.forEach(choice => {
-        if (choice.innerText === decodeHTML(correctAnswer)) {
-            choice.classList.add('correct');
-        } else {
-            choice.classList.add('wrong');
-        }
-        choice.disabled = true;
-    });
+    highlightCorrectAnswer(correctAnswer);
 
     if (selectedAnswer === correctAnswer) {
         const elapsedTime = Date.now() - startTime;
@@ -149,8 +146,54 @@ function highlightCorrectAnswer(correctAnswer) {
     choices.forEach(choice => {
         if (choice.innerText === decodeHTML(correctAnswer)) {
             choice.classList.add('correct');
+        } else {
+            choice.classList.add('wrong');
         }
     });
+}
+
+// End game when finished all questions
+function endGame() {
+    quizBox.style.display = 'none';
+    saveHighScore();
+}
+
+// Save High Score
+async function saveHighScore() {
+    const name = prompt('Enter your name for the scoreboard');
+    const date = new Date().toLocaleDateString();
+    const newScore = { name, score: totalScore, date };
+
+    loader.style.display = 'block';
+
+    try {
+        const response = await fetch(PANTRY_API_URL);
+        if (response.ok) {
+            const data = await response.json();
+            highScores = data.highScores || [];
+        }
+    } catch (error) {
+        console.log('Basket not found, creating a new one.');
+        highScores = [];
+        
+    }
+
+    highScores.push(newScore);
+
+    // Sort high scores and keep  only top 10
+    highScores.sort((a, b) => b.score - a.score);
+    highScores = highScores.slice(0, 10);
+
+    try {
+        await fetch(PANTRY_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ highScores }),
+        });
+    } catch (error) {
+        console.error('Error saving high score:', error);
+        
+    }
 }
 
 // On Startup
